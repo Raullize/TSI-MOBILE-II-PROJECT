@@ -48,6 +48,75 @@ O BasketLeague Mobile é o aplicativo em React Native e Expo para a gestão de l
    - Use o Expo Go para escanear o QR Code
    - Ou rode no emulador Android/iOS conforme a configuração local
 
+## Rodando com a API (Backend) no Expo Go
+
+O app consome a API REST do projeto [`TSI-WEB-SERVICES-PROJECT`](../TSI-WEB-SERVICES-PROJECT) (NestJS + PostgreSQL). Como o Expo Go roda no celular físico, ele **não** acessa `localhost` — precisa do **IP local da máquina** que roda o backend, e ambos (PC e celular) devem estar na **mesma rede Wi-Fi**.
+
+### 1. Suba o backend (NestJS + PostgreSQL)
+
+No diretório `TSI-WEB-SERVICES-PROJECT`:
+
+```bash
+# 1. Suba o banco PostgreSQL (Docker)
+docker compose up -d
+
+# 2. Aplique as migrations (cria as tabelas)
+npx prisma migrate deploy
+
+# 3. Inicie a API em modo desenvolvimento
+pnpm start:dev
+```
+
+A API sobe em `http://localhost:3000` com prefixo global `/api`. O CORS já está habilitado no `main.ts`.
+
+### 2. Libere a porta 3000 no Firewall do Windows
+
+Sem isso o celular não alcança o PC. Em um **PowerShell como Administrador**:
+
+```powershell
+netsh advfirewall firewall add rule name="NestJS 3000" dir=in action=allow protocol=TCP localport=3000
+```
+
+> Em macOS/Linux, libere a porta 3000 no firewall correspondente (ufw, firewalld, etc.).
+
+### 3. Descubra o IP local do PC
+
+```powershell
+# Windows
+ipconfig
+```
+
+Procure o **IPv4** da interface Wi-Fi (ex: `192.168.0.104`). Em macOS/Linux use `ifconfig` ou `ip addr`.
+
+### 4. Configure a URL da API no app
+
+Edite `src/services/api.ts` e ajuste o `BASE_URL` com o IP do passo anterior:
+
+```ts
+const BASE_URL = 'http://SEU_IP_LOCAL:3000/api';
+// exemplo: 'http://192.168.0.104:3000/api'
+```
+
+### 5. Verifique a conexão
+
+No **navegador do celular**, acesse:
+
+```
+http://SEU_IP_LOCAL:3000/api/teams
+```
+
+Se retornar `[]` (ou a lista de times), a conexão está OK. Se ficar carregando, revise os passos 1, 2 e 3 (backend no ar, firewall liberado, mesma rede Wi-Fi).
+
+### 6. Rode o app
+
+```bash
+pnpm start
+```
+
+Escaneie o QR Code com o **Expo Go**. O app carrega os dados direto da API.
+
+> **Resumo do que precisa estar rodando ao mesmo tempo:** PostgreSQL (Docker) → API NestJS (`pnpm start:dev`) → Metro/Expo do app (`pnpm start`).
+
 ## Documentação
 - [Documentação da API](../TSI-WEB-SERVICES-PROJECT/README.md)
 - [Wireframe no Figma](https://www.figma.com/make/64G1bJmp6NL4WbJHIiO6OE/BasketLeague-Mobile-App-Screens?t=hZR7WpPSlUoKePT4-0)
