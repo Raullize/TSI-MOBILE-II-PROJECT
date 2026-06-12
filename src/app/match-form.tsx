@@ -5,7 +5,8 @@ import { theme } from '../constants/theme';
 import { useTeams } from '../hooks/useTeams';
 import { matchesService } from '../services/matches.service';
 import { MatchStatus } from '../types';
-import { buildMatchDateTime, getTeamAbbreviation } from '../utils/team';
+import { buildMatchDateTime, getTeamAbbreviation, toDateInput } from '../utils/team';
+import { maskDate, maskTime } from '../utils/mask';
 
 export default function MatchFormScreen() {
   const router = useRouter();
@@ -34,7 +35,7 @@ export default function MatchFormScreen() {
     if (!id) return;
     matchesService.getById(id).then(match => {
       const d = new Date(match.date);
-      setDate(d.toISOString().slice(0, 10));
+      setDate(toDateInput(match.date));
       setTime(`${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`);
       setLocation(match.location);
       setHomeTeam(match.homeTeamId);
@@ -84,10 +85,12 @@ export default function MatchFormScreen() {
             <Text style={styles.label}>Date</Text>
             <TextInput
               style={styles.input}
-              placeholder="YYYY-MM-DD"
+              placeholder="DD/MM/AAAA"
               placeholderTextColor={theme.colors.subtext}
               value={date}
-              onChangeText={setDate}
+              onChangeText={v => setDate(maskDate(v))}
+              keyboardType="numeric"
+              maxLength={10}
             />
           </View>
           <View style={[styles.formGroup, { flex: 1, marginLeft: theme.spacing.sm }]}>
@@ -97,7 +100,9 @@ export default function MatchFormScreen() {
               placeholder="HH:MM"
               placeholderTextColor={theme.colors.subtext}
               value={time}
-              onChangeText={setTime}
+              onChangeText={v => setTime(maskTime(v))}
+              keyboardType="numeric"
+              maxLength={5}
             />
           </View>
         </View>
