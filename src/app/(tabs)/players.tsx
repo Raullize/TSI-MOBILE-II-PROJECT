@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { theme } from '../../constants/theme';
-import { mockPlayers, mockTeams } from '../../data/mock';
+import { usePlayers } from '../../hooks/usePlayers';
+import { useTeams } from '../../hooks/useTeams';
+import { playersService } from '../../services/players.service';
 
 const POSITIONS = ['All', 'PG', 'SG', 'SF', 'PF', 'C'];
 
@@ -12,33 +14,40 @@ export default function PlayersScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
   const router = useRouter();
 
-  const filteredPlayers = mockPlayers.filter(player => {
+  const { players, loading, error, refetch } = usePlayers();
+  const { teams } = useTeams();
+
+  const filteredPlayers = players.filter(player => {
     const matchesSearch = player.name.toLowerCase().includes(search.toLowerCase());
     const matchesPosition = activeFilter === 'All' || player.position === activeFilter;
     return matchesSearch && matchesPosition;
   });
 
-  const getTeamName = (teamId: string) => {
-    return mockTeams.find(t => t.id === teamId)?.name || 'Unknown Team';
-  };
-
-  const getTeamColor = (teamId: string) => {
-    return mockTeams.find(t => t.id === teamId)?.color || theme.colors.primary;
-  };
+  const getTeam = (teamId: string) => teams.find(t => t.id === teamId);
 
   const handleDelete = (id: string) => {
     Alert.alert('Delete Player', 'Are you sure you want to delete this player?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => console.log('Delete player', id) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await playersService.remove(id);
+            refetch();
+          } catch {
+            Alert.alert('Error', 'Failed to delete player.');
+          }
+        },
+      },
     ]);
   };
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color={theme.colors.subtext} />
-        <TextInput 
+        <TextInput
           style={styles.searchInput}
           placeholder="Search players..."
           placeholderTextColor={theme.colors.subtext}
@@ -47,66 +56,63 @@ export default function PlayersScreen() {
         />
       </View>
 
-      {/* Filters */}
       <View style={styles.filtersWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersContainer}>
           {POSITIONS.map(pos => (
-            <TouchableOpacity 
+            <TouchableOpacity
               key={pos}
-              style={[
-                styles.filterPill,
-                activeFilter === pos && styles.filterPillActive
-              ]}
+              style={[styles.filterPill, activeFilter === pos && styles.filterPillActive]}
               onPress={() => setActiveFilter(pos)}
             >
-              <Text style={[
-                styles.filterText,
-                activeFilter === pos && styles.filterTextActive
-              ]}>{pos}</Text>
+              <Text style={[styles.filterText, activeFilter === pos && styles.filterTextActive]}>{pos}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
-      {/* Players List */}
-      <FlatList 
+      {loading && <ActivityIndicator style={styles.loader} color={theme.colors.primary} />}
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      <FlatList
         data={filteredPlayers}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
-        renderItem={({ item }) => (
-          <View style={styles.playerCard}>
-            <View style={[styles.playerNumber, { backgroundColor: getTeamColor(item.teamId) }]}>
-              <Text style={styles.playerNumberText}>{item.number}</Text>
-            </View>
-            <View style={styles.playerInfo}>
-              <Text style={styles.playerName}>{item.name}</Text>
-              <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
-                <Text style={styles.playerTeam}>{getTeamName(item.teamId)}</Text>
-                <View style={styles.positionBadge}>
-                  <Text style={styles.positionText}>{item.position}</Text>
+        renderItem={({ item }) => {
+          const team = getTeam(item.teamId);
+          return (
+            <View style={styles.playerCard}>
+              <View style={[styles.playerNumber, { backgroundColor: team?.uniformColor ?? theme.colors.primary }]}>
+                <Text style={styles.playerNumberText}>{item.jerseyNumber}</Text>
+              </View>
+              <View style={styles.playerInfo}>
+                <Text style={styles.playerName}>{item.name}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  <Text style={styles.playerTeam}>{team?.name ?? 'Unknown Team'}</Text>
+                  <View style={styles.positionBadge}>
+                    <Text style={styles.positionText}>{item.position}</Text>
+                  </View>
                 </View>
               </View>
+              <View style={styles.cardActions}>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => router.push({ pathname: '/player-form', params: { id: item.id } })}
+                >
+                  <Ionicons name="pencil" size={20} color={theme.colors.subtext} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => handleDelete(item.id)}
+                >
+                  <Ionicons name="trash" size={20} color={theme.colors.error} />
+                </TouchableOpacity>
+              </View>
             </View>
-            <View style={styles.cardActions}>
-              <TouchableOpacity 
-                style={styles.actionBtn}
-                onPress={() => router.push({ pathname: '/player-form', params: { id: item.id } })}
-              >
-                <Ionicons name="pencil" size={20} color={theme.colors.subtext} />
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.actionBtn}
-                onPress={() => handleDelete(item.id)}
-              >
-                <Ionicons name="trash" size={20} color={theme.colors.error} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+          );
+        }}
       />
 
-      {/* FAB */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/player-form')}
       >
@@ -166,6 +172,14 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: '#FFF',
+  },
+  loader: {
+    marginTop: theme.spacing.xl,
+  },
+  errorText: {
+    color: theme.colors.error,
+    textAlign: 'center',
+    margin: theme.spacing.lg,
   },
   listContainer: {
     padding: theme.spacing.md,

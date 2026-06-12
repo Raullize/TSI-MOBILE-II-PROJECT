@@ -1,17 +1,23 @@
 import { Ionicons } from '@expo/vector-icons';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { theme } from '../../constants/theme';
-import { mockMatches, mockPlayers, mockTeams } from '../../data/mock';
+import { useMatches } from '../../hooks/useMatches';
+import { usePlayers } from '../../hooks/usePlayers';
+import { useTeams } from '../../hooks/useTeams';
+import { getTeamAbbreviation, formatMatchDate, formatMatchTime } from '../../utils/team';
 
 export default function HomeScreen() {
-  const upcomingMatches = mockMatches.filter(m => m.status === 'Scheduled');
-  const finishedMatches = mockMatches.filter(m => m.status === 'Finished');
+  const { teams } = useTeams();
+  const { players } = usePlayers();
+  const { matches } = useMatches();
 
-  const getTeam = (id: string) => mockTeams.find(t => t.id === id);
+  const upcomingMatches = matches.filter(m => m.status === 'SCHEDULED');
+  const finishedMatches = matches.filter(m => m.status === 'FINISHED');
+
+  const getTeam = (id: string) => teams.find(t => t.id === id);
 
   return (
     <ScrollView style={styles.container}>
-      {/* Welcome Card */}
       <View style={styles.welcomeCard}>
         <View style={styles.welcomeHeader}>
           <Text style={styles.welcomeTitle}>Welcome back, Admin 👋</Text>
@@ -19,16 +25,15 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Metrics Grid */}
       <View style={styles.metricsGrid}>
         <View style={styles.metricCard}>
           <Ionicons name="people-outline" size={24} color={theme.colors.primary} />
-          <Text style={styles.metricValue}>{mockTeams.length}</Text>
+          <Text style={styles.metricValue}>{teams.length}</Text>
           <Text style={styles.metricLabel}>Total Teams</Text>
         </View>
         <View style={styles.metricCard}>
           <Ionicons name="person-outline" size={24} color={theme.colors.primary} />
-          <Text style={styles.metricValue}>{mockPlayers.length}</Text>
+          <Text style={styles.metricValue}>{players.length}</Text>
           <Text style={styles.metricLabel}>Total Players</Text>
         </View>
         <View style={styles.metricCard}>
@@ -43,7 +48,6 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* Upcoming Matches */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Upcoming matches</Text>
         {upcomingMatches.map(match => {
@@ -54,26 +58,26 @@ export default function HomeScreen() {
             <View key={match.id} style={styles.matchCard}>
               <View style={styles.matchTeams}>
                 <View style={styles.team}>
-                  <View style={[styles.teamLogo, { backgroundColor: homeTeam?.color }]}>
-                    <Text style={styles.teamLogoText}>{homeTeam?.abbreviation}</Text>
+                  <View style={[styles.teamLogo, { backgroundColor: homeTeam?.uniformColor }]}>
+                    <Text style={styles.teamLogoText}>{homeTeam ? getTeamAbbreviation(homeTeam.name) : '?'}</Text>
                   </View>
                   <Text style={styles.teamName} numberOfLines={2}>{homeTeam?.name}</Text>
                 </View>
-                
+
                 <Text style={styles.vsText}>VS</Text>
-                
+
                 <View style={styles.team}>
                   <Text style={[styles.teamName, { textAlign: 'right' }]} numberOfLines={2}>{awayTeam?.name}</Text>
-                  <View style={[styles.teamLogo, { backgroundColor: awayTeam?.color }]}>
-                    <Text style={styles.teamLogoText}>{awayTeam?.abbreviation}</Text>
+                  <View style={[styles.teamLogo, { backgroundColor: awayTeam?.uniformColor }]}>
+                    <Text style={styles.teamLogoText}>{awayTeam ? getTeamAbbreviation(awayTeam.name) : '?'}</Text>
                   </View>
                 </View>
               </View>
-              
+
               <View style={styles.matchFooter}>
-                <Text style={styles.matchInfoText}>{match.date}</Text>
+                <Text style={styles.matchInfoText}>{formatMatchDate(match.date)}</Text>
                 <Text style={styles.matchInfoDot}>•</Text>
-                <Text style={styles.matchInfoText}>{match.time}</Text>
+                <Text style={styles.matchInfoText}>{formatMatchTime(match.date)}</Text>
                 <Text style={styles.matchInfoDot}>•</Text>
                 <Text style={styles.matchInfoText}>{match.location}</Text>
               </View>
@@ -175,7 +179,7 @@ const styles = StyleSheet.create({
   teamLogoText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
   },
   teamName: {
     color: theme.colors.text,

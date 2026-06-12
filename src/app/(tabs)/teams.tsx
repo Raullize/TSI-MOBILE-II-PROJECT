@@ -1,31 +1,44 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { theme } from '../../constants/theme';
-import { mockTeams } from '../../data/mock';
+import { useTeams } from '../../hooks/useTeams';
+import { teamsService } from '../../services/teams.service';
+import { getTeamAbbreviation } from '../../utils/team';
 
 export default function TeamsScreen() {
   const [search, setSearch] = useState('');
   const router = useRouter();
+  const { teams, loading, error, refetch } = useTeams();
 
-  const filteredTeams = mockTeams.filter(team => 
+  const filteredTeams = teams.filter(team =>
     team.name.toLowerCase().includes(search.toLowerCase())
   );
 
   const handleDelete = (id: string) => {
     Alert.alert('Delete Team', 'Are you sure you want to delete this team?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => console.log('Delete team', id) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await teamsService.remove(id);
+            refetch();
+          } catch {
+            Alert.alert('Error', 'Failed to delete team.');
+          }
+        },
+      },
     ]);
   };
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color={theme.colors.subtext} />
-        <TextInput 
+        <TextInput
           style={styles.searchInput}
           placeholder="Search teams..."
           placeholderTextColor={theme.colors.subtext}
@@ -34,28 +47,30 @@ export default function TeamsScreen() {
         />
       </View>
 
-      {/* Teams List */}
-      <FlatList 
+      {loading && <ActivityIndicator style={styles.loader} color={theme.colors.primary} />}
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      <FlatList
         data={filteredTeams}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => (
           <View style={styles.teamCard}>
-            <View style={[styles.teamLogo, { backgroundColor: item.color }]}>
-              <Text style={styles.teamLogoText}>{item.abbreviation}</Text>
+            <View style={[styles.teamLogo, { backgroundColor: item.uniformColor }]}>
+              <Text style={styles.teamLogoText}>{getTeamAbbreviation(item.name)}</Text>
             </View>
             <View style={styles.teamInfo}>
               <Text style={styles.teamName}>{item.name}</Text>
-              <Text style={styles.teamMeta}>{item.city} • {item.playerCount} players</Text>
+              <Text style={styles.teamMeta}>{item.city}</Text>
             </View>
             <View style={styles.cardActions}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={() => router.push({ pathname: '/team-form', params: { id: item.id } })}
               >
                 <Ionicons name="pencil" size={20} color={theme.colors.subtext} />
               </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionBtn}
                 onPress={() => handleDelete(item.id)}
               >
@@ -66,8 +81,7 @@ export default function TeamsScreen() {
         )}
       />
 
-      {/* FAB */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/team-form')}
       >
@@ -99,6 +113,14 @@ const styles = StyleSheet.create({
     marginLeft: theme.spacing.sm,
     fontSize: 16,
   },
+  loader: {
+    marginTop: theme.spacing.xl,
+  },
+  errorText: {
+    color: theme.colors.error,
+    textAlign: 'center',
+    margin: theme.spacing.lg,
+  },
   listContainer: {
     padding: theme.spacing.md,
     paddingTop: 0,
@@ -124,7 +146,7 @@ const styles = StyleSheet.create({
   teamLogoText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
   },
   teamInfo: {
     flex: 1,

@@ -1,9 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { theme } from '../../constants/theme';
-import { mockMatches, mockTeams } from '../../data/mock';
+import { useMatches } from '../../hooks/useMatches';
+import { useTeams } from '../../hooks/useTeams';
+import { matchesService } from '../../services/matches.service';
+import { getTeamAbbreviation, formatMatchDate, formatMatchTime } from '../../utils/team';
 
 const FILTERS = ['All', 'Upcoming', 'Finished'];
 
@@ -11,68 +14,75 @@ export default function MatchesScreen() {
   const [activeFilter, setActiveFilter] = useState('All');
   const router = useRouter();
 
-  const filteredMatches = mockMatches.filter(match => {
+  const { matches, loading, error, refetch } = useMatches();
+  const { teams } = useTeams();
+
+  const filteredMatches = matches.filter(match => {
     if (activeFilter === 'All') return true;
-    if (activeFilter === 'Upcoming') return match.status === 'Scheduled';
-    if (activeFilter === 'Finished') return match.status === 'Finished';
+    if (activeFilter === 'Upcoming') return match.status === 'SCHEDULED';
+    if (activeFilter === 'Finished') return match.status === 'FINISHED';
     return true;
   });
 
-  const getTeam = (teamId: string) => mockTeams.find(t => t.id === teamId);
+  const getTeam = (teamId: string) => teams.find(t => t.id === teamId);
 
   const handleDelete = (id: string) => {
     Alert.alert('Delete Match', 'Are you sure you want to delete this match?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => console.log('Delete match', id) },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await matchesService.remove(id);
+            refetch();
+          } catch {
+            Alert.alert('Error', 'Failed to delete match.');
+          }
+        },
+      },
     ]);
   };
 
   return (
     <View style={styles.container}>
-      {/* Filters */}
       <View style={styles.filtersWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filtersContainer}>
           {FILTERS.map(filter => (
-            <TouchableOpacity 
+            <TouchableOpacity
               key={filter}
-              style={[
-                styles.filterPill,
-                activeFilter === filter && styles.filterPillActive
-              ]}
+              style={[styles.filterPill, activeFilter === filter && styles.filterPillActive]}
               onPress={() => setActiveFilter(filter)}
             >
-              <Text style={[
-                styles.filterText,
-                activeFilter === filter && styles.filterTextActive
-              ]}>{filter}</Text>
+              <Text style={[styles.filterText, activeFilter === filter && styles.filterTextActive]}>{filter}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
-      {/* Matches List */}
-      <FlatList 
+      {loading && <ActivityIndicator style={styles.loader} color={theme.colors.primary} />}
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
+      <FlatList
         data={filteredMatches}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => {
           const homeTeam = getTeam(item.homeTeamId);
           const awayTeam = getTeam(item.awayTeamId);
-          const isFinished = item.status === 'Finished';
+          const isFinished = item.status === 'FINISHED';
 
           return (
             <View style={styles.matchCard}>
               <View style={styles.matchHeader}>
-                <Text style={styles.matchDate}>{item.date} • {item.time}</Text>
-                <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
-                  <View style={[
-                    styles.statusBadge, 
-                    { backgroundColor: isFinished ? theme.colors.success : theme.colors.cardAlt }
-                  ]}>
-                    <Text style={[
-                      styles.statusText,
-                      !isFinished && { color: theme.colors.subtext }
-                    ]}>{isFinished ? 'Finished' : 'Scheduled'}</Text>
+                <Text style={styles.matchDate}>
+                  {formatMatchDate(item.date)} • {formatMatchTime(item.date)}
+                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                  <View style={[styles.statusBadge, { backgroundColor: isFinished ? theme.colors.success : theme.colors.cardAlt }]}>
+                    <Text style={[styles.statusText, !isFinished && { color: theme.colors.subtext }]}>
+                      {isFinished ? 'Finished' : 'Scheduled'}
+                    </Text>
                   </View>
                   <TouchableOpacity onPress={() => router.push({ pathname: '/match-form', params: { id: item.id } })}>
                     <Ionicons name="pencil" size={18} color={theme.colors.subtext} />
@@ -84,27 +94,24 @@ export default function MatchesScreen() {
               </View>
 
               <View style={styles.matchTeams}>
-                {/* Home Team */}
                 <View style={styles.team}>
-                  <View style={[styles.teamLogo, { backgroundColor: homeTeam?.color }]}>
-                    <Text style={styles.teamLogoText}>{homeTeam?.abbreviation}</Text>
+                  <View style={[styles.teamLogo, { backgroundColor: homeTeam?.uniformColor }]}>
+                    <Text style={styles.teamLogoText}>{homeTeam ? getTeamAbbreviation(homeTeam.name) : '?'}</Text>
                   </View>
                   <Text style={styles.teamName} numberOfLines={2}>{homeTeam?.name}</Text>
                 </View>
-                
-                {/* Score or VS */}
+
                 <View style={styles.scoreContainer}>
                   {isFinished ? (
-                    <Text style={styles.scoreText}>{item.homeScore} - {item.awayScore}</Text>
+                    <Text style={styles.scoreText}>{item.homeTeamScore} - {item.awayTeamScore}</Text>
                   ) : (
                     <Text style={styles.vsText}>VS</Text>
                   )}
                 </View>
-                
-                {/* Away Team */}
+
                 <View style={[styles.team, { flexDirection: 'row-reverse' }]}>
-                  <View style={[styles.teamLogo, { backgroundColor: awayTeam?.color }]}>
-                    <Text style={styles.teamLogoText}>{awayTeam?.abbreviation}</Text>
+                  <View style={[styles.teamLogo, { backgroundColor: awayTeam?.uniformColor }]}>
+                    <Text style={styles.teamLogoText}>{awayTeam ? getTeamAbbreviation(awayTeam.name) : '?'}</Text>
                   </View>
                   <Text style={[styles.teamName, { textAlign: 'right' }]} numberOfLines={2}>{awayTeam?.name}</Text>
                 </View>
@@ -114,8 +121,7 @@ export default function MatchesScreen() {
         }}
       />
 
-      {/* FAB */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.fab}
         onPress={() => router.push('/match-form')}
       >
@@ -157,6 +163,14 @@ const styles = StyleSheet.create({
   },
   filterTextActive: {
     color: '#FFF',
+  },
+  loader: {
+    marginTop: theme.spacing.xl,
+  },
+  errorText: {
+    color: theme.colors.error,
+    textAlign: 'center',
+    margin: theme.spacing.lg,
   },
   listContainer: {
     padding: theme.spacing.md,
@@ -211,7 +225,7 @@ const styles = StyleSheet.create({
   teamLogoText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 16,
+    fontSize: 14,
   },
   teamName: {
     color: theme.colors.text,
