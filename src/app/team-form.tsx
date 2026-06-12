@@ -1,78 +1,95 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { theme } from '../constants/theme';
+import { teamsService } from '../services/teams.service';
 
 const COLORS = ['#DC2626', '#3B82F6', '#10B981', '#A855F7', '#EAB308', '#FFFFFF'];
 
-export default function NewTeamScreen() {
+export default function TeamFormScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams();
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
-  
+
   const [teamName, setTeamName] = useState('');
   const [city, setCity] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
 
-  const handleSave = () => {
-    // Aqui no futuro chamaremos a API
-    console.log({ teamName, city, selectedColor });
-    router.back();
+  useEffect(() => {
+    if (!id) return;
+    teamsService.getById(id).then(team => {
+      setTeamName(team.name);
+      setCity(team.city);
+      setSelectedColor(team.uniformColor);
+    }).catch(() => Alert.alert('Não foi possível carregar', 'Verifique sua conexão e tente novamente.'));
+  }, [id]);
+
+  const handleSave = async () => {
+    if (!teamName.trim() || !city.trim()) {
+      Alert.alert('Campos obrigatórios', 'Preencha o nome do time e a cidade.');
+      return;
+    }
+    try {
+      const dto = { name: teamName, city, uniformColor: selectedColor };
+      if (isEdit) {
+        await teamsService.update(id!, dto);
+      } else {
+        await teamsService.create(dto);
+      }
+      router.back();
+    } catch {
+      Alert.alert('Não foi possível salvar', 'Verifique sua conexão e tente novamente.');
+    }
   };
 
   return (
     <>
       <Stack.Screen options={{ title: isEdit ? 'Edit Team' : 'New Team' }} />
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Team Name</Text>
-        <TextInput 
-          style={styles.input}
-          placeholder="Enter team name"
-          placeholderTextColor={theme.colors.subtext}
-          value={teamName}
-          onChangeText={setTeamName}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>City</Text>
-        <TextInput 
-          style={styles.input}
-          placeholder="Enter city"
-          placeholderTextColor={theme.colors.subtext}
-          value={city}
-          onChangeText={setCity}
-        />
-      </View>
-
-      <View style={styles.formGroup}>
-        <Text style={styles.label}>Primary Color</Text>
-        <View style={styles.colorPicker}>
-          {COLORS.map(color => (
-            <TouchableOpacity 
-              key={color}
-              style={[
-                styles.colorCircle, 
-                { backgroundColor: color },
-                selectedColor === color && styles.colorCircleSelected
-              ]}
-              onPress={() => setSelectedColor(color)}
-            />
-          ))}
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Team Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter team name"
+            placeholderTextColor={theme.colors.subtext}
+            value={teamName}
+            onChangeText={setTeamName}
+          />
         </View>
-      </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>{isEdit ? 'Update Team' : 'Save Team'}</Text>
-        </TouchableOpacity>
-        
-        <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>City</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter city"
+            placeholderTextColor={theme.colors.subtext}
+            value={city}
+            onChangeText={setCity}
+          />
+        </View>
+
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Primary Color</Text>
+          <View style={styles.colorPicker}>
+            {COLORS.map(color => (
+              <TouchableOpacity
+                key={color}
+                style={[styles.colorCircle, { backgroundColor: color }, selectedColor === color && styles.colorCircleSelected]}
+                onPress={() => setSelectedColor(color)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+            <Text style={styles.saveButtonText}>{isEdit ? 'Update Team' : 'Save Team'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
+            <Text style={styles.cancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
     </>
   );
 }
