@@ -1,4 +1,4 @@
-import { useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { theme } from '../constants/theme';
@@ -7,6 +7,9 @@ const COLORS = ['#DC2626', '#3B82F6', '#10B981', '#A855F7', '#EAB308', '#FFFFFF'
 
 export default function NewTeamScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const isEdit = !!id;
+  
   const [teamName, setTeamName] = useState('');
   const [city, setCity] = useState('');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
@@ -18,7 +21,9 @@ export default function NewTeamScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <>
+      <Stack.Screen options={{ title: isEdit ? 'Edit Team' : 'New Team' }} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.formGroup}>
         <Text style={styles.label}>Team Name</Text>
         <TextInput 
@@ -60,7 +65,7 @@ export default function NewTeamScreen() {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Team</Text>
+          <Text style={styles.saveButtonText}>{isEdit ? 'Update Team' : 'Save Team'}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -68,6 +73,7 @@ export default function NewTeamScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </>
   );
 }
 

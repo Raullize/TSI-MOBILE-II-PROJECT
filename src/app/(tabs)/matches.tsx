@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { theme } from '../../constants/theme';
 import { mockMatches, mockTeams } from '../../data/mock';
 
@@ -19,6 +19,13 @@ export default function MatchesScreen() {
   });
 
   const getTeam = (teamId: string) => mockTeams.find(t => t.id === teamId);
+
+  const handleDelete = (id: string) => {
+    Alert.alert('Delete Match', 'Are you sure you want to delete this match?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => console.log('Delete match', id) },
+    ]);
+  };
 
   return (
     <View style={styles.container}>
@@ -57,14 +64,22 @@ export default function MatchesScreen() {
             <View style={styles.matchCard}>
               <View style={styles.matchHeader}>
                 <Text style={styles.matchDate}>{item.date} • {item.time}</Text>
-                <View style={[
-                  styles.statusBadge, 
-                  { backgroundColor: isFinished ? theme.colors.success : theme.colors.cardAlt }
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    !isFinished && { color: theme.colors.subtext }
-                  ]}>{isFinished ? 'Finished' : 'Scheduled'}</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center', gap: 12}}>
+                  <View style={[
+                    styles.statusBadge, 
+                    { backgroundColor: isFinished ? theme.colors.success : theme.colors.cardAlt }
+                  ]}>
+                    <Text style={[
+                      styles.statusText,
+                      !isFinished && { color: theme.colors.subtext }
+                    ]}>{isFinished ? 'Finished' : 'Scheduled'}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => router.push({ pathname: '/match-form', params: { id: item.id } })}>
+                    <Ionicons name="pencil" size={18} color={theme.colors.subtext} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDelete(item.id)}>
+                    <Ionicons name="trash" size={18} color={theme.colors.error} />
+                  </TouchableOpacity>
                 </View>
               </View>
 

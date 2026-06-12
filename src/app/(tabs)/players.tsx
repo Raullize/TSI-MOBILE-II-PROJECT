@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { theme } from '../../constants/theme';
 import { mockPlayers, mockTeams } from '../../data/mock';
 
@@ -24,6 +24,13 @@ export default function PlayersScreen() {
 
   const getTeamColor = (teamId: string) => {
     return mockTeams.find(t => t.id === teamId)?.color || theme.colors.primary;
+  };
+
+  const handleDelete = (id: string) => {
+    Alert.alert('Delete Player', 'Are you sure you want to delete this player?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: () => console.log('Delete player', id) },
+    ]);
   };
 
   return (
@@ -73,10 +80,26 @@ export default function PlayersScreen() {
             </View>
             <View style={styles.playerInfo}>
               <Text style={styles.playerName}>{item.name}</Text>
-              <Text style={styles.playerTeam}>{getTeamName(item.teamId)}</Text>
+              <View style={{flexDirection: 'row', alignItems: 'center', gap: 8}}>
+                <Text style={styles.playerTeam}>{getTeamName(item.teamId)}</Text>
+                <View style={styles.positionBadge}>
+                  <Text style={styles.positionText}>{item.position}</Text>
+                </View>
+              </View>
             </View>
-            <View style={styles.positionBadge}>
-              <Text style={styles.positionText}>{item.position}</Text>
+            <View style={styles.cardActions}>
+              <TouchableOpacity 
+                style={styles.actionBtn}
+                onPress={() => router.push({ pathname: '/player-form', params: { id: item.id } })}
+              >
+                <Ionicons name="pencil" size={20} color={theme.colors.subtext} />
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.actionBtn}
+                onPress={() => handleDelete(item.id)}
+              >
+                <Ionicons name="trash" size={20} color={theme.colors.error} />
+              </TouchableOpacity>
             </View>
           </View>
         )}
@@ -194,6 +217,13 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  cardActions: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+  },
+  actionBtn: {
+    padding: theme.spacing.sm,
   },
   fab: {
     position: 'absolute',

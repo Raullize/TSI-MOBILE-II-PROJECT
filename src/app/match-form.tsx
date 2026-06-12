@@ -1,24 +1,32 @@
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { theme } from '../constants/theme';
 import { mockTeams } from '../data/mock';
 
 export default function MatchFormScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const isEdit = !!id;
+  
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [location, setLocation] = useState('');
   const [homeTeam, setHomeTeam] = useState(mockTeams[0]?.id || '');
   const [awayTeam, setAwayTeam] = useState(mockTeams[1]?.id || '');
+  const [status, setStatus] = useState('SCHEDULED');
+  const [homeScore, setHomeScore] = useState('');
+  const [awayScore, setAwayScore] = useState('');
 
   const handleSave = () => {
-    console.log({ date, time, location, homeTeam, awayTeam });
+    console.log({ date, time, location, homeTeam, awayTeam, status, homeScore, awayScore });
     router.back();
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <>
+      <Stack.Screen options={{ title: isEdit ? 'Edit Match' : 'New Match' }} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.row}>
         <View style={[styles.formGroup, { flex: 1, marginRight: theme.spacing.sm }]}>
           <Text style={styles.label}>Date</Text>
@@ -51,6 +59,24 @@ export default function MatchFormScreen() {
           value={location}
           onChangeText={setLocation}
         />
+      </View>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Match Status</Text>
+        <View style={styles.statusContainer}>
+          <TouchableOpacity 
+            style={[styles.statusButton, status === 'SCHEDULED' && styles.statusButtonActive]}
+            onPress={() => setStatus('SCHEDULED')}
+          >
+            <Text style={[styles.statusButtonText, status === 'SCHEDULED' && styles.statusButtonTextActive]}>Scheduled</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.statusButton, status === 'FINISHED' && styles.statusButtonActive]}
+            onPress={() => setStatus('FINISHED')}
+          >
+            <Text style={[styles.statusButtonText, status === 'FINISHED' && styles.statusButtonTextActive]}>Finished</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.formGroup}>
@@ -101,9 +127,36 @@ export default function MatchFormScreen() {
         </View>
       </View>
 
+      {status === 'FINISHED' && (
+        <View style={styles.row}>
+          <View style={[styles.formGroup, { flex: 1, marginRight: theme.spacing.sm }]}>
+            <Text style={styles.label}>Home Score</Text>
+            <TextInput 
+              style={styles.input}
+              placeholder="0"
+              placeholderTextColor={theme.colors.subtext}
+              value={homeScore}
+              onChangeText={setHomeScore}
+              keyboardType="numeric"
+            />
+          </View>
+          <View style={[styles.formGroup, { flex: 1, marginLeft: theme.spacing.sm }]}>
+            <Text style={styles.label}>Away Score</Text>
+            <TextInput 
+              style={styles.input}
+              placeholder="0"
+              placeholderTextColor={theme.colors.subtext}
+              value={awayScore}
+              onChangeText={setAwayScore}
+              keyboardType="numeric"
+            />
+          </View>
+        </View>
+      )}
+
       <View style={styles.actions}>
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Match</Text>
+          <Text style={styles.saveButtonText}>{isEdit ? 'Update Match' : 'Save Match'}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -111,6 +164,7 @@ export default function MatchFormScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </>
   );
 }
 
@@ -178,6 +232,30 @@ const styles = StyleSheet.create({
   teamItemTextSelected: {
     color: theme.colors.primary,
     fontWeight: '600',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  statusButton: {
+    flex: 1,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.cardAlt,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    alignItems: 'center',
+  },
+  statusButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  statusButtonText: {
+    color: theme.colors.subtext,
+    fontWeight: '600',
+  },
+  statusButtonTextActive: {
+    color: '#FFF',
   },
   actions: {
     marginTop: theme.spacing.md,

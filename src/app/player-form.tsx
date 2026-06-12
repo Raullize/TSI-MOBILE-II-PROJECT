@@ -1,6 +1,6 @@
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
-import { useRouter } from 'expo-router';
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { theme } from '../constants/theme';
 import { mockTeams } from '../data/mock';
 
@@ -8,6 +8,9 @@ const POSITIONS = ['PG', 'SG', 'SF', 'PF', 'C'];
 
 export default function PlayerFormScreen() {
   const router = useRouter();
+  const { id } = useLocalSearchParams();
+  const isEdit = !!id;
+  
   const [name, setName] = useState('');
   const [jerseyNumber, setJerseyNumber] = useState('');
   const [selectedPosition, setSelectedPosition] = useState(POSITIONS[0]);
@@ -19,7 +22,9 @@ export default function PlayerFormScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <>
+      <Stack.Screen options={{ title: isEdit ? 'Edit Player' : 'New Player' }} />
+      <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.formGroup}>
         <Text style={styles.label}>Player Name</Text>
         <TextInput 
@@ -90,7 +95,7 @@ export default function PlayerFormScreen() {
 
       <View style={styles.actions}>
         <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>Save Player</Text>
+          <Text style={styles.saveButtonText}>{isEdit ? 'Update Player' : 'Save Player'}</Text>
         </TouchableOpacity>
         
         <TouchableOpacity style={styles.cancelButton} onPress={() => router.back()}>
@@ -98,6 +103,7 @@ export default function PlayerFormScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </>
   );
 }
 
