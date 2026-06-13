@@ -1,4 +1,8 @@
-const BASE_URL = 'https://plastic-basics-cab-colleague.trycloudflare.com/api';
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+if (!BASE_URL) {
+  throw new Error('EXPO_PUBLIC_API_URL não definida. Configure o arquivo .env.');
+}
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${BASE_URL}${path}`, {
