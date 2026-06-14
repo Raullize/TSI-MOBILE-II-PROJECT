@@ -48,54 +48,84 @@ O BasketLeague Mobile é o aplicativo em React Native e Expo para a gestão de l
    - Use o Expo Go para escanear o QR Code
    - Ou rode no emulador Android/iOS conforme a configuração local
 
-## Rodando com a API (Backend) no Expo Go
+## Conectando com a API (Backend)
 
-O app consome a API REST do projeto [`TSI-WEB-SERVICES-PROJECT`](../TSI-WEB-SERVICES-PROJECT) (NestJS + PostgreSQL). Como o Expo Go roda no celular físico, ele **não** acessa `localhost` — precisa do **IP local da máquina** que roda o backend, e ambos (PC e celular) devem estar na **mesma rede Wi-Fi**.
+O app consome a API REST do projeto [`TSI-WEB-SERVICES-PROJECT`](../TSI-WEB-SERVICES-PROJECT) (NestJS + PostgreSQL). 
 
-### 1. Suba o backend (NestJS + PostgreSQL)
+Como o Expo Go roda no celular físico, ele **não** consegue acessar `localhost` (já que o localhost do celular é ele mesmo). É necessário usar o **IP local da sua máquina** na rede Wi-Fi.
 
-No diretório `TSI-WEB-SERVICES-PROJECT`:
+### 1. Suba a API no seu Computador
+Siga as instruções completas no **[README do Backend](../TSI-WEB-SERVICES-PROJECT/README.md)** para subir o banco de dados via Docker, aplicar as migrations e iniciar o servidor NestJS (`pnpm start:dev`).
 
-```bash
-# 1. Suba o banco PostgreSQL (Docker)
-docker compose up -d
+### 2. Libere a porta 3000 no Firewall
 
-# 2. Aplique as migrations (cria as tabelas)
-npx prisma migrate deploy
+Sem isso, o celular não alcança o computador. Escolha o seu sistema operacional:
 
-# 3. Inicie a API em modo desenvolvimento
-pnpm start:dev
-```
+<details>
+<summary><b>No Windows</b></summary>
+<br>
 
-A API sobe em `http://localhost:3000` com prefixo global `/api`. O CORS já está habilitado no `main.ts`.
-
-### 2. Libere a porta 3000 no Firewall do Windows
-
-Sem isso o celular não alcança o PC. Em um **PowerShell como Administrador**:
-
+Abra o **PowerShell como Administrador** e rode:
 ```powershell
 netsh advfirewall firewall add rule name="NestJS 3000" dir=in action=allow protocol=TCP localport=3000
 ```
+</details>
 
-> Em macOS/Linux, libere a porta 3000 no firewall correspondente (ufw, firewalld, etc.).
+<details>
+<summary><b>No Linux</b></summary>
+<br>
+
+Dependendo do gerenciador de firewall da sua distribuição, rode um dos comandos abaixo no terminal:
+
+```bash
+# Se usar iptables direto (mais comum em Arch/CachyOS)
+sudo iptables -A INPUT -p tcp --dport 3000 -j ACCEPT
+
+# Se usar UFW (Ubuntu/Debian/Mint)
+sudo ufw allow 3000/tcp
+
+# Se usar Firewalld (Fedora/CentOS/RHEL)
+sudo firewall-cmd --zone=public --add-port=3000/tcp --permanent
+sudo firewall-cmd --reload
+```
+</details>
 
 ### 3. Descubra o IP local do PC
 
+<details>
+<summary><b>No Windows</b></summary>
+<br>
+
+No PowerShell ou CMD, rode:
 ```powershell
-# Windows
 ipconfig
 ```
+Procure pelo **Endereço IPv4** da sua rede Wi-Fi (ex: `192.168.0.100`).
+</details>
 
-Procure o **IPv4** da interface Wi-Fi (ex: `192.168.0.104`). Em macOS/Linux use `ifconfig` ou `ip addr`.
+<details>
+<summary><b>No Linux</b></summary>
+<br>
 
-### 4. Configure a URL da API no app
-
-Edite `src/services/api.ts` e ajuste o `BASE_URL` com o IP do passo anterior:
-
-```ts
-const BASE_URL = 'http://SEU_IP_LOCAL:3000/api';
-// exemplo: 'http://192.168.0.104:3000/api'
+No terminal, rode:
+```bash
+ip addr
+# ou
+ifconfig
 ```
+Procure pelo IP (`inet`) no bloco da interface Wi-Fi (geralmente `wlan0` ou `wlp...`) ou da rede cabeada (`eth0` ou `enp...`).
+</details>
+
+### 4. Configure o arquivo .env
+
+Crie um arquivo `.env` na raiz do projeto (mesmo nível do `package.json`) e configure a variável `EXPO_PUBLIC_API_URL` com o IP do passo anterior:
+
+```env
+EXPO_PUBLIC_API_URL=http://SEU_IP_LOCAL:3000/api
+# exemplo: EXPO_PUBLIC_API_URL=http://192.168.0.104:3000/api
+```
+
+> **Aviso:** Sempre que alterar o arquivo `.env`, lembre-se de limpar o cache do Metro Bundler ao iniciar o app (`pnpm start --clear` ou usando a opção `Shift + R` no terminal).
 
 ### 5. Verifique a conexão
 
