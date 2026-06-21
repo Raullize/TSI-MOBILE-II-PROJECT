@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Card } from '../../components/Card';
+import { FAB } from '../../components/FAB';
 import { theme } from '../../constants/theme';
 import { useTeams } from '../../hooks/useTeams';
 import { teamsService } from '../../services/teams.service';
@@ -55,7 +57,10 @@ export default function TeamsScreen() {
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listContainer}
         renderItem={({ item }) => (
-          <View style={styles.teamCard}>
+          <Card 
+            onEdit={() => router.push({ pathname: '/team-form', params: { id: item.id } })}
+            onDelete={() => handleDelete(item.id)}
+          >
             <View style={[styles.teamLogo, { backgroundColor: item.uniformColor }]}>
               <Text style={styles.teamLogoText}>{getTeamAbbreviation(item.name)}</Text>
             </View>
@@ -63,30 +68,11 @@ export default function TeamsScreen() {
               <Text style={styles.teamName}>{item.name}</Text>
               <Text style={styles.teamMeta}>{item.city}</Text>
             </View>
-            <View style={styles.cardActions}>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => router.push({ pathname: '/team-form', params: { id: item.id } })}
-              >
-                <Ionicons name="pencil" size={20} color={theme.colors.subtext} />
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => handleDelete(item.id)}
-              >
-                <Ionicons name="trash" size={20} color={theme.colors.error} />
-              </TouchableOpacity>
-            </View>
-          </View>
+          </Card>
         )}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/team-form')}
-      >
-        <Ionicons name="add" size={24} color="#FFF" />
-      </TouchableOpacity>
+      <FAB onPress={() => router.push('/team-form')} />
     </View>
   );
 }
@@ -126,15 +112,6 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     gap: theme.spacing.md,
   },
-  teamCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
   teamLogo: {
     width: 48,
     height: 48,
@@ -160,28 +137,5 @@ const styles = StyleSheet.create({
   teamMeta: {
     color: theme.colors.subtext,
     fontSize: 13,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  actionBtn: {
-    padding: theme.spacing.sm,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
 });

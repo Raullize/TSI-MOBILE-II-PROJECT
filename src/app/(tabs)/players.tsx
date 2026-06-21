@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Card } from '../../components/Card';
+import { FAB } from '../../components/FAB';
 import { theme } from '../../constants/theme';
 import { usePlayers } from '../../hooks/usePlayers';
 import { useTeams } from '../../hooks/useTeams';
@@ -80,7 +82,10 @@ export default function PlayersScreen() {
         renderItem={({ item }) => {
           const team = getTeam(item.teamId);
           return (
-            <View style={styles.playerCard}>
+            <Card
+              onEdit={() => router.push({ pathname: '/player-form', params: { id: item.id } })}
+              onDelete={() => handleDelete(item.id)}
+            >
               <View style={[styles.playerNumber, { backgroundColor: team?.uniformColor ?? theme.colors.primary }]}>
                 <Text style={styles.playerNumberText}>{item.jerseyNumber}</Text>
               </View>
@@ -93,31 +98,12 @@ export default function PlayersScreen() {
                   </View>
                 </View>
               </View>
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => router.push({ pathname: '/player-form', params: { id: item.id } })}
-                >
-                  <Ionicons name="pencil" size={20} color={theme.colors.subtext} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => handleDelete(item.id)}
-                >
-                  <Ionicons name="trash" size={20} color={theme.colors.error} />
-                </TouchableOpacity>
-              </View>
-            </View>
+            </Card>
           );
         }}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/player-form')}
-      >
-        <Ionicons name="add" size={24} color="#FFF" />
-      </TouchableOpacity>
+      <FAB onPress={() => router.push('/player-form')} />
     </View>
   );
 }
@@ -186,15 +172,6 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     gap: theme.spacing.md,
   },
-  playerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: theme.colors.card,
-    padding: theme.spacing.md,
-    borderRadius: theme.borderRadius.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-  },
   playerNumber: {
     width: 48,
     height: 48,
@@ -231,28 +208,5 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     fontSize: 12,
-  },
-  cardActions: {
-    flexDirection: 'row',
-    gap: theme.spacing.sm,
-  },
-  actionBtn: {
-    padding: theme.spacing.sm,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
 });

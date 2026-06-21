@@ -2,11 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FAB } from '../../components/FAB';
 import { theme } from '../../constants/theme';
 import { useMatches } from '../../hooks/useMatches';
 import { useTeams } from '../../hooks/useTeams';
 import { matchesService } from '../../services/matches.service';
-import { getTeamAbbreviation, formatMatchDate, formatMatchTime } from '../../utils/team';
+import { formatMatchDate, formatMatchTime, getTeamAbbreviation } from '../../utils/team';
 
 const FILTERS = ['All', 'Upcoming', 'Finished'];
 
@@ -74,25 +75,6 @@ export default function MatchesScreen() {
 
           return (
             <View style={styles.matchCard}>
-              <View style={styles.matchHeader}>
-                <Text style={styles.matchDate}>
-                  {formatMatchDate(item.date)} • {formatMatchTime(item.date)}
-                </Text>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                  <View style={[styles.statusBadge, { backgroundColor: isFinished ? theme.colors.success : theme.colors.cardAlt }]}>
-                    <Text style={[styles.statusText, !isFinished && { color: theme.colors.subtext }]}>
-                      {isFinished ? 'Finished' : 'Scheduled'}
-                    </Text>
-                  </View>
-                  <TouchableOpacity onPress={() => router.push({ pathname: '/match-form', params: { id: item.id } })}>
-                    <Ionicons name="pencil" size={18} color={theme.colors.subtext} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                    <Ionicons name="trash" size={18} color={theme.colors.error} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
               <View style={styles.matchTeams}>
                 <View style={styles.team}>
                   <View style={[styles.teamLogo, { backgroundColor: homeTeam?.uniformColor }]}>
@@ -100,7 +82,7 @@ export default function MatchesScreen() {
                   </View>
                   <Text style={styles.teamName} numberOfLines={2}>{homeTeam?.name}</Text>
                 </View>
-
+                
                 <View style={styles.scoreContainer}>
                   {isFinished ? (
                     <Text style={styles.scoreText}>{item.homeTeamScore} - {item.awayTeamScore}</Text>
@@ -108,12 +90,46 @@ export default function MatchesScreen() {
                     <Text style={styles.vsText}>VS</Text>
                   )}
                 </View>
-
-                <View style={[styles.team, { flexDirection: 'row-reverse' }]}>
+                
+                <View style={styles.team}>
                   <View style={[styles.teamLogo, { backgroundColor: awayTeam?.uniformColor }]}>
                     <Text style={styles.teamLogoText}>{awayTeam ? getTeamAbbreviation(awayTeam.name) : '?'}</Text>
                   </View>
-                  <Text style={[styles.teamName, { textAlign: 'right' }]} numberOfLines={2}>{awayTeam?.name}</Text>
+                  <Text style={styles.teamName} numberOfLines={2}>{awayTeam?.name}</Text>
+                </View>
+              </View>
+
+              <View style={styles.matchFooter}>
+                <Text style={styles.matchDate}>
+                  {formatMatchDate(item.date)} • {formatMatchTime(item.date)} {item.location ? `• ${item.location}` : ''}
+                </Text>
+                
+                <View style={styles.footerActions}>
+                  <View style={[styles.statusBadge, { backgroundColor: isFinished ? theme.colors.success : theme.colors.cardAlt }]}>
+                    <Text style={[styles.statusText, !isFinished && { color: theme.colors.subtext }]}>
+                      {isFinished ? 'Finished' : 'Scheduled'}
+                    </Text>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push({ pathname: '/match-form', params: { id: item.id } });
+                    }}
+                  >
+                    <Ionicons name="pencil-outline" size={20} color={theme.colors.subtext} />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.actionButton} 
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      handleDelete(item.id);
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -121,12 +137,7 @@ export default function MatchesScreen() {
         }}
       />
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/match-form')}
-      >
-        <Ionicons name="add" size={24} color="#FFF" />
-      </TouchableOpacity>
+      <FAB onPress={() => router.push('/match-form')} />
     </View>
   );
 }
@@ -177,22 +188,33 @@ const styles = StyleSheet.create({
     paddingTop: 0,
     gap: theme.spacing.md,
   },
+  matchFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.border,
+    paddingTop: theme.spacing.sm,
+  },
+  footerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  actionButton: {
+    padding: theme.spacing.sm,
+  },
+  matchDate: {
+    color: theme.colors.subtext,
+    fontSize: 13,
+  },
   matchCard: {
     backgroundColor: theme.colors.card,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border,
-  },
-  matchHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  matchDate: {
-    color: theme.colors.subtext,
-    fontSize: 13,
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -208,9 +230,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    width: '100%',
   },
   team: {
-    flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
     gap: theme.spacing.sm,
@@ -225,17 +247,19 @@ const styles = StyleSheet.create({
   teamLogoText: {
     color: '#FFF',
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: 16,
   },
   teamName: {
     color: theme.colors.text,
     fontSize: 14,
-    flex: 1,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   scoreContainer: {
-    minWidth: 60,
+    paddingHorizontal: theme.spacing.md,
     alignItems: 'center',
-    marginHorizontal: theme.spacing.sm,
+    justifyContent: 'center',
+    minWidth: 80,
   },
   scoreText: {
     color: theme.colors.text,
@@ -246,21 +270,5 @@ const styles = StyleSheet.create({
     color: theme.colors.subtext,
     fontSize: 14,
     fontWeight: 'bold',
-  },
-  fab: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: theme.colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
   },
 });
