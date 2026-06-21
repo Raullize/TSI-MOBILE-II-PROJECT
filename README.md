@@ -75,7 +75,8 @@ netsh advfirewall firewall add rule name="NestJS 3000" dir=in action=allow proto
 <summary><b>No Linux</b></summary>
 <br>
 
-Dependendo do gerenciador de firewall da sua distribuição, rode um dos comandos abaixo no terminal:
+Dependendo do gerenciador de firewall da sua distribuição, rode um dos comandos abaixo no terminal. 
+> **Aviso importante (Linux):** Comandos de iptables costumam "resetar" quando o computador é reiniciado. Se você reiniciar o computador, precisará rodar o comando novamente para abrir a porta.
 
 ```bash
 # Se usar iptables direto (mais comum em Arch/CachyOS)
@@ -125,7 +126,7 @@ EXPO_PUBLIC_API_URL=http://SEU_IP_LOCAL:3000/api
 # exemplo: EXPO_PUBLIC_API_URL=http://192.168.0.104:3000/api
 ```
 
-> **Aviso:** Sempre que alterar o arquivo `.env`, lembre-se de limpar o cache do Metro Bundler ao iniciar o app (`pnpm start --clear` ou usando a opção `Shift + R` no terminal).
+> **Atenção (Mudança de Rede):** Toda vez que você mudar de rede Wi-Fi (ex: for de casa para a faculdade), o seu IP vai mudar. Você precisa descobrir o novo IP (Passo 3), atualizar este arquivo `.env` com o novo IP, **E** rodar o comando do Firewall (Passo 2) novamente. Lembre-se também de sempre iniciar o app limpando o cache para ele ler o novo IP.
 
 ### 5. Verifique a conexão
 
