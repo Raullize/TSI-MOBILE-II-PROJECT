@@ -1,3 +1,4 @@
+// Formata a data para exibir na tela
 export function maskDate(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 8);
   let out = digits.slice(0, 2);
@@ -6,6 +7,7 @@ export function maskDate(value: string): string {
   return out;
 }
 
+// Formata a hora para exibir na tela
 export function maskTime(value: string): string {
   const digits = value.replace(/\D/g, '').slice(0, 4);
   let out = digits.slice(0, 2);

@@ -1,3 +1,4 @@
+// Formata o nome do time para exibir na tela
 export function getTeamAbbreviation(name: string): string {
   return name
     .split(' ')
@@ -7,6 +8,7 @@ export function getTeamAbbreviation(name: string): string {
     .slice(0, 3);
 }
 
+// Formata a data para exibir na tela
 export function formatMatchDate(isoDate: string): string {
   return new Date(isoDate).toLocaleDateString('pt-BR', {
     day: '2-digit',
@@ -15,6 +17,7 @@ export function formatMatchDate(isoDate: string): string {
   });
 }
 
+// Formata a hora para exibir na tela
 export function formatMatchTime(isoDate: string): string {
   return new Date(isoDate).toLocaleTimeString('pt-BR', {
     hour: '2-digit',
